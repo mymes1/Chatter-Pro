@@ -58,27 +58,77 @@ const Upload = () => {
       return;
     }
 
-    // For now, just create the video entry without actual file upload
-    // You'll need to set up Supabase Storage for actual file uploads
-    const { error } = await supabase
-      .from('videos')
-      .insert({
-        user_id: user.id,
-        title: videoTitle,
-        description: videoDescription,
-        video_url: 'placeholder', // Replace with actual storage URL
+    try {
+      // Generate unique file names
+      const fileExt = selectedFile.name.split('.').pop();
+      const videoFileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const thumbnailFileName = `${user.id}/${Date.now()}_thumb.jpg`;
+
+      // Upload video file
+      const { error: videoError } = await supabase.storage
+        .from('videos')
+        .upload(videoFileName, selectedFile);
+
+      if (videoError) throw videoError;
+
+      // Generate thumbnail from video
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(selectedFile);
+      video.currentTime = 1;
+      
+      await new Promise<void>((resolve) => {
+        video.onloadeddata = () => resolve();
       });
 
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Success', description: 'Video uploaded!' });
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0);
+
+      // Convert canvas to blob
+      const thumbnailBlob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
+      });
+
+      // Upload thumbnail
+      const { error: thumbError } = await supabase.storage
+        .from('thumbnails')
+        .upload(thumbnailFileName, thumbnailBlob);
+
+      if (thumbError) throw thumbError;
+
+      // Get public URLs
+      const { data: videoData } = supabase.storage.from('videos').getPublicUrl(videoFileName);
+      const { data: thumbData } = supabase.storage.from('thumbnails').getPublicUrl(thumbnailFileName);
+
+      // Get video duration
+      const duration = Math.round(video.duration);
+
+      // Create video entry in database
+      const { error: dbError } = await supabase
+        .from('videos')
+        .insert({
+          user_id: user.id,
+          title: videoTitle,
+          description: videoDescription,
+          video_url: videoData.publicUrl,
+          thumbnail_url: thumbData.publicUrl,
+          duration,
+        });
+
+      if (dbError) throw dbError;
+
+      toast({ title: 'Success', description: 'Video uploaded successfully!' });
       setVideoTitle('');
       setVideoDescription('');
       setSelectedFile(null);
       navigate('/explore');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

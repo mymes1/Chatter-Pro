@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { MessageCircle, Home, PlusSquare, Compass, User } from 'lucide-react';
+import { MessageCircle, Home, PlusSquare, Compass, User, Film } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Layout = () => {
@@ -9,6 +9,7 @@ const Layout = () => {
   const navItems = [
     { icon: MessageCircle, label: 'Chats', path: '/chats' },
     { icon: Home, label: 'Feed', path: '/' },
+    { icon: Film, label: 'Reels', path: '/reels' },
     { icon: PlusSquare, label: 'Upload', path: '/upload' },
     { icon: Compass, label: 'Explore', path: '/explore' },
     { icon: User, label: 'Profile', path: '/profile' },

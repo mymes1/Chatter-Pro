@@ -6,13 +6,15 @@ import { Search, TrendingUp, Video as VideoIcon, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface Video {
   id: string;
   title: string;
+  video_url: string;
   thumbnail_url: string | null;
   views: number;
-  user: {
+  profiles: {
     display_name: string;
     username: string;
     avatar_url: string | null;
@@ -28,6 +30,7 @@ interface User {
 }
 
 const Explore = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [videos, setVideos] = useState<Video[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -57,13 +60,7 @@ const Explore = () => {
       .limit(20);
 
     if (videosData) {
-      setVideos(videosData.map(v => ({
-        id: v.id,
-        title: v.title,
-        thumbnail_url: v.thumbnail_url,
-        views: v.views,
-        user: v.profiles,
-      })));
+      setVideos(videosData);
     }
 
     if (usersData) {
@@ -75,7 +72,7 @@ const Explore = () => {
 
   const filteredVideos = videos.filter(video =>
     video.title.toLowerCase().includes(search.toLowerCase()) ||
-    video.user?.username?.toLowerCase().includes(search.toLowerCase())
+    video.profiles?.username?.toLowerCase().includes(search.toLowerCase())
   );
 
   const filteredUsers = users.filter(user =>
@@ -123,7 +120,11 @@ const Explore = () => {
                 <p className="col-span-2 text-center text-muted-foreground py-8">No videos found</p>
               ) : (
                 filteredVideos.map((video) => (
-                  <Card key={video.id} className="overflow-hidden">
+                  <Card 
+                    key={video.id} 
+                    className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-border/50 hover:border-primary/50"
+                    onClick={() => navigate('/reels')}
+                  >
                     <div className="aspect-video bg-muted flex items-center justify-center">
                       {video.thumbnail_url ? (
                         <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
@@ -144,7 +145,11 @@ const Explore = () => {
           <TabsContent value="videos" className="mt-0">
             <div className="grid grid-cols-2 gap-2 p-4">
               {filteredVideos.map((video) => (
-                <Card key={video.id} className="overflow-hidden">
+                <Card 
+                  key={video.id} 
+                  className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-border/50 hover:border-primary/50"
+                  onClick={() => navigate('/reels')}
+                >
                   <div className="aspect-video bg-muted flex items-center justify-center">
                     {video.thumbnail_url ? (
                       <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
@@ -166,9 +171,9 @@ const Explore = () => {
               {filteredUsers.map((user) => (
                 <div key={user.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
+                    <Avatar className="w-12 h-12 border-2 border-primary/20">
                       <AvatarImage src={user.avatar_url || ''} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary/10 text-primary">
                         {user.display_name?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>

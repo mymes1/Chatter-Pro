@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import ChatRoom from "./pages/ChatRoom";
 import NewChat from "./pages/NewChat";
+import Reels from "./pages/Reels";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/explore" element={<Explore />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
+          <Route path="/reels" element={<Reels />} />
           <Route path="/chats/:chatId" element={<ChatRoom />} />
           <Route path="/chats/new" element={<NewChat />} />
           <Route path="*" element={<NotFound />} />
