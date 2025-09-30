@@ -74,35 +74,44 @@ const Upload = () => {
         setUploadProgress(20);
         const { error: videoError } = await supabase.storage
           .from('videos')
-          .upload(videoFileName, selectedFile);
+          .upload(videoFileName, selectedFile, { contentType: selectedFile.type });
 
         if (videoError) throw videoError;
 
         setUploadProgress(50);
-        // Generate thumbnail from video
+        // Generate thumbnail from video (reliable: wait for metadata, then seek)
         const video = document.createElement('video');
-        video.src = URL.createObjectURL(selectedFile);
-        video.currentTime = 1;
-        
+        const objectUrl = URL.createObjectURL(selectedFile);
+        video.src = objectUrl;
+
         await new Promise<void>((resolve) => {
-          video.onloadeddata = () => resolve();
+          video.onloadedmetadata = () => resolve();
+        });
+
+        // Seek to 1s (or 0s if shorter) to capture a representative frame
+        const targetTime = Math.min(1, Math.max(0, (video.duration || 1) > 1 ? 1 : 0));
+        await new Promise<void>((resolve) => {
+          video.currentTime = targetTime;
+          video.onseeked = () => resolve();
         });
 
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0);
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const thumbnailBlob = await new Promise<Blob>((resolve) => {
           canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
         });
 
+        URL.revokeObjectURL(objectUrl);
+
         setUploadProgress(70);
         // Upload thumbnail
         const { error: thumbError } = await supabase.storage
           .from('thumbnails')
-          .upload(thumbnailFileName, thumbnailBlob);
+          .upload(thumbnailFileName, thumbnailBlob, { contentType: 'image/jpeg' });
 
         if (thumbError) throw thumbError;
 
