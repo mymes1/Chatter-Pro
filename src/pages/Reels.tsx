@@ -150,7 +150,7 @@ const Reels = () => {
         
         setLikes(prev => ({
           ...prev,
-          [videoId]: { isLiked: false, count: prev[videoId].count - 1 }
+          [videoId]: { isLiked: false, count: (prev[videoId]?.count || 1) - 1 }
         }));
       } else {
         await supabase
@@ -159,7 +159,7 @@ const Reels = () => {
         
         setLikes(prev => ({
           ...prev,
-          [videoId]: { isLiked: true, count: prev[videoId].count + 1 }
+          [videoId]: { isLiked: true, count: (prev[videoId]?.count || 0) + 1 }
         }));
       }
     } catch (error: any) {
