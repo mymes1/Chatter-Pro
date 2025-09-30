@@ -33,6 +33,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="/reels" element={<Reels />} />
+          <Route path="/reels/:videoId" element={<Reels />} />
           <Route path="/chats/:chatId" element={<ChatRoom />} />
           <Route path="/chats/new" element={<NewChat />} />
           <Route path="*" element={<NotFound />} />

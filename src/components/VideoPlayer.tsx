@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -9,6 +9,7 @@ interface VideoPlayerProps {
   autoPlay?: boolean;
   muted?: boolean;
   loop?: boolean;
+  isActive?: boolean;
 }
 
 export const VideoPlayer = ({ 
@@ -17,25 +18,38 @@ export const VideoPlayer = ({
   className = '',
   autoPlay = false,
   muted = false,
-  loop = false
+  loop = false,
+  isActive = false
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
   const [showControls, setShowControls] = useState(true);
 
-  const togglePlay = () => {
+  useEffect(() => {
+    if (videoRef.current && isActive) {
+      videoRef.current.play().catch(e => console.log('Play prevented:', e));
+      setIsPlaying(true);
+    } else if (videoRef.current && !isActive) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [isActive]);
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play();
+        videoRef.current.play().catch(e => console.log('Play prevented:', e));
       }
       setIsPlaying(!isPlaying);
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
@@ -43,39 +57,34 @@ export const VideoPlayer = ({
   };
 
   return (
-    <div 
-      className={`relative group ${className}`}
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => setShowControls(false)}
-    >
+    <div className={`relative ${className}`}>
       <video
         ref={videoRef}
         src={videoUrl}
         poster={thumbnailUrl}
-        autoPlay={autoPlay}
-        muted={muted}
+        muted={isMuted}
         loop={loop}
         playsInline
-        className="w-full h-full object-cover rounded-lg"
+        className="w-full h-full object-cover"
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
       
-      {showControls && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg transition-opacity">
+      {!isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
           <Button
             variant="ghost"
             size="icon"
             className="w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 text-white"
             onClick={togglePlay}
           >
-            {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+            <Play className="w-8 h-8 ml-1" />
           </Button>
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 flex gap-2">
+      <div className="absolute bottom-4 right-4">
         <Button
           variant="ghost"
           size="icon"

@@ -123,7 +123,7 @@ const Explore = () => {
                   <Card 
                     key={video.id} 
                     className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-border/50 hover:border-primary/50"
-                    onClick={() => navigate('/reels')}
+                    onClick={() => navigate(`/reels/${video.id}`)}
                   >
                     <div className="aspect-video bg-muted flex items-center justify-center">
                       {video.thumbnail_url ? (
@@ -148,7 +148,7 @@ const Explore = () => {
                 <Card 
                   key={video.id} 
                   className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-border/50 hover:border-primary/50"
-                  onClick={() => navigate('/reels')}
+                  onClick={() => navigate(`/reels/${video.id}`)}
                 >
                   <div className="aspect-video bg-muted flex items-center justify-center">
                     {video.thumbnail_url ? (
