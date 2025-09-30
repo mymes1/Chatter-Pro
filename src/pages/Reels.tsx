@@ -5,7 +5,10 @@ import { VideoPlayer } from '@/components/VideoPlayer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Heart, MessageCircle, Share2, ArrowLeft, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -48,6 +51,10 @@ const Reels = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [videoToDelete, setVideoToDelete] = useState<{ id: string; url: string; thumbnail: string | null } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -226,16 +233,43 @@ const Reels = () => {
     }
   };
 
-  const handleDelete = async (videoId: string, videoUrl: string, thumbnailUrl: string | null) => {
-    if (!currentUserId) {
-      toast({ title: 'Error', description: 'You must be logged in', variant: 'destructive' });
+  const openDeleteDialog = (videoId: string, videoUrl: string, thumbnailUrl: string | null) => {
+    setVideoToDelete({ id: videoId, url: videoUrl, thumbnail: thumbnailUrl });
+    setDeleteDialogOpen(true);
+    setDeletePassword('');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!currentUserId || !videoToDelete) return;
+
+    if (!deletePassword.trim()) {
+      toast({ title: 'Error', description: 'Please enter your password', variant: 'destructive' });
       return;
     }
 
+    setDeleteLoading(true);
+
     try {
+      // Verify password by getting current user's email and attempting to sign in
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.email) {
+        throw new Error('Unable to verify user');
+      }
+
+      // Verify password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: deletePassword,
+      });
+
+      if (signInError) {
+        throw new Error('Incorrect password');
+      }
+
       // Extract file paths from URLs
-      const videoPath = videoUrl.split('/videos/')[1];
-      const thumbnailPath = thumbnailUrl?.split('/thumbnails/')[1];
+      const videoPath = videoToDelete.url.split('/videos/')[1];
+      const thumbnailPath = videoToDelete.thumbnail?.split('/thumbnails/')[1];
 
       // Delete from storage
       if (videoPath) {
@@ -249,21 +283,33 @@ const Reels = () => {
       const { error } = await supabase
         .from('videos')
         .delete()
-        .eq('id', videoId);
+        .eq('id', videoToDelete.id)
+        .eq('user_id', currentUserId); // Extra security check
 
       if (error) throw error;
 
       toast({ title: 'Success', description: 'Video deleted successfully' });
       
       // Remove from local state
-      setVideos(prev => prev.filter(v => v.id !== videoId));
+      setVideos(prev => prev.filter(v => v.id !== videoToDelete.id));
+      
+      // Close dialog and reset
+      setDeleteDialogOpen(false);
+      setVideoToDelete(null);
+      setDeletePassword('');
       
       // Navigate back if no videos left
       if (videos.length <= 1) {
         navigate('/explore');
       }
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ 
+        title: 'Error', 
+        description: error.message || 'Failed to delete video', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -386,7 +432,7 @@ const Reels = () => {
                   variant="ghost"
                   size="icon"
                   className="w-12 h-12 rounded-full bg-red-500/20 hover:bg-red-500/40 text-white backdrop-blur-sm"
-                  onClick={() => handleDelete(video.id, video.video_url, video.thumbnail_url)}
+                  onClick={() => openDeleteDialog(video.id, video.video_url, video.thumbnail_url)}
                 >
                   <Trash2 className="w-6 h-6" />
                 </Button>
@@ -439,6 +485,54 @@ const Reels = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Video Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. Please enter your password to confirm deletion of this video.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-2 py-4">
+            <Label htmlFor="delete-password">Password</Label>
+            <Input
+              id="delete-password"
+              type="password"
+              placeholder="Enter your password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !deleteLoading) {
+                  handleConfirmDelete();
+                }
+              }}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeletePassword('');
+                setVideoToDelete(null);
+              }}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmDelete}
+              disabled={deleteLoading || !deletePassword.trim()}
+            >
+              {deleteLoading ? 'Deleting...' : 'Delete Video'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
