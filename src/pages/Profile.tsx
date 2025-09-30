@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, LogOut, Grid, Video as VideoIcon } from 'lucide-react';
+import { LogOut, Grid, Video as VideoIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { EditProfile } from '@/components/EditProfile';
@@ -97,14 +97,9 @@ const Profile = () => {
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold">Profile</h1>
-            <div className="flex gap-2">
-              <Button size="icon" variant="ghost">
-                <Settings className="w-5 h-5" />
-              </Button>
-              <Button size="icon" variant="ghost" onClick={handleSignOut}>
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
+            <Button size="icon" variant="ghost" onClick={handleSignOut}>
+              <LogOut className="w-5 h-5" />
+            </Button>
           </div>
 
           <div className="flex flex-col items-center text-center">
