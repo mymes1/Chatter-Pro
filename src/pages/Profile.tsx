@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, LogOut, Grid, Video as VideoIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { EditProfile } from '@/components/EditProfile';
 
 interface Profile {
   id: string;
@@ -25,6 +26,7 @@ const Profile = () => {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -134,9 +136,20 @@ const Profile = () => {
             </div>
           </div>
 
-          <Button className="mt-4 w-full max-w-sm">Edit Profile</Button>
+          <Button onClick={() => setEditOpen(true)} className="mt-4 w-full max-w-sm">
+            Edit Profile
+          </Button>
         </div>
       </div>
+
+      {profile && (
+        <EditProfile
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          profile={profile}
+          onUpdate={fetchProfile}
+        />
+      )}
 
       <Tabs defaultValue="posts" className="flex-1 overflow-hidden flex flex-col">
         <TabsList className="w-full justify-start rounded-none border-b px-4">

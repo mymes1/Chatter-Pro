@@ -12,6 +12,7 @@ import Explore from "./pages/Explore";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import ChatRoom from "./pages/ChatRoom";
+import NewChat from "./pages/NewChat";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="/chats/:chatId" element={<ChatRoom />} />
+          <Route path="/chats/new" element={<NewChat />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
