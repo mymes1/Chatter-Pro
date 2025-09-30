@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Image, Video, Upload as UploadIcon } from 'lucide-react';
+import { Image, Video, Upload as UploadIcon, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +18,7 @@ const Upload = () => {
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const uploadAbortController = useRef<AbortController | null>(null);
 
@@ -79,33 +81,41 @@ const Upload = () => {
         if (videoError) throw videoError;
 
         setUploadProgress(50);
-        // Generate thumbnail from video (reliable: wait for metadata, then seek)
+        
+        // Create video element for duration (needed in both cases)
         const video = document.createElement('video');
-        const objectUrl = URL.createObjectURL(selectedFile);
-        video.src = objectUrl;
+        const videoObjectUrl = URL.createObjectURL(selectedFile);
+        video.src = videoObjectUrl;
 
         await new Promise<void>((resolve) => {
           video.onloadedmetadata = () => resolve();
         });
 
-        // Seek to 1s (or 0s if shorter) to capture a representative frame
-        const targetTime = Math.min(1, Math.max(0, (video.duration || 1) > 1 ? 1 : 0));
-        await new Promise<void>((resolve) => {
-          video.currentTime = targetTime;
-          video.onseeked = () => resolve();
-        });
+        let thumbnailBlob: Blob;
+        
+        // Use manual thumbnail if provided, otherwise auto-generate
+        if (selectedThumbnail) {
+          thumbnailBlob = selectedThumbnail;
+        } else {
+          // Seek to 1s (or 0s if shorter) to capture a representative frame
+          const targetTime = Math.min(1, Math.max(0, (video.duration || 1) > 1 ? 1 : 0));
+          await new Promise<void>((resolve) => {
+            video.currentTime = targetTime;
+            video.onseeked = () => resolve();
+          });
 
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 1280;
-        canvas.height = video.videoHeight || 720;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 1280;
+          canvas.height = video.videoHeight || 720;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const thumbnailBlob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
-        });
+          thumbnailBlob = await new Promise<Blob>((resolve) => {
+            canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
+          });
+        }
 
-        URL.revokeObjectURL(objectUrl);
+        URL.revokeObjectURL(videoObjectUrl);
 
         setUploadProgress(70);
         // Upload thumbnail
@@ -141,6 +151,7 @@ const Upload = () => {
         setVideoTitle('');
         setVideoDescription('');
         setSelectedFile(null);
+        setSelectedThumbnail(null);
         
         // Allow user to navigate away
         return true;
@@ -238,6 +249,38 @@ const Upload = () => {
                     />
                     <p className="text-sm text-muted-foreground mt-2">
                       Upload videos up to 1 hour
+                    </p>
+                  </div>
+                  
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                    <Image className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm font-medium mb-2">Custom Thumbnail (Optional)</p>
+                    {selectedThumbnail && (
+                      <div className="relative inline-block mb-3">
+                        <img 
+                          src={URL.createObjectURL(selectedThumbnail)} 
+                          alt="Thumbnail preview" 
+                          className="max-h-32 rounded-lg"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="absolute -top-2 -right-2"
+                          onClick={() => setSelectedThumbnail(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setSelectedThumbnail(e.target.files?.[0] || null)}
+                      className="max-w-xs mx-auto"
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      If not provided, will auto-generate from video
                     </p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading || !selectedFile}>

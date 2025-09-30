@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Share2, ArrowLeft } from 'lucide-react';
+import { Heart, MessageCircle, Share2, ArrowLeft, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Video {
@@ -226,6 +226,47 @@ const Reels = () => {
     }
   };
 
+  const handleDelete = async (videoId: string, videoUrl: string, thumbnailUrl: string | null) => {
+    if (!currentUserId) {
+      toast({ title: 'Error', description: 'You must be logged in', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      // Extract file paths from URLs
+      const videoPath = videoUrl.split('/videos/')[1];
+      const thumbnailPath = thumbnailUrl?.split('/thumbnails/')[1];
+
+      // Delete from storage
+      if (videoPath) {
+        await supabase.storage.from('videos').remove([videoPath]);
+      }
+      if (thumbnailPath) {
+        await supabase.storage.from('thumbnails').remove([thumbnailPath]);
+      }
+
+      // Delete from database
+      const { error } = await supabase
+        .from('videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (error) throw error;
+
+      toast({ title: 'Success', description: 'Video deleted successfully' });
+      
+      // Remove from local state
+      setVideos(prev => prev.filter(v => v.id !== videoId));
+      
+      // Navigate back if no videos left
+      if (videos.length <= 1) {
+        navigate('/explore');
+      }
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     const scrollPosition = container.scrollTop;
@@ -339,6 +380,17 @@ const Reels = () => {
               >
                 <Share2 className="w-6 h-6" />
               </Button>
+              
+              {currentUserId === video.user_id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-12 h-12 rounded-full bg-red-500/20 hover:bg-red-500/40 text-white backdrop-blur-sm"
+                  onClick={() => handleDelete(video.id, video.video_url, video.thumbnail_url)}
+                >
+                  <Trash2 className="w-6 h-6" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
