@@ -96,22 +96,22 @@ export const EditProfile = ({ open, onOpenChange, profile, onUpdate }: EditProfi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Edit Profile</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-2">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <Avatar className="w-24 h-24">
+              <Avatar className="w-24 h-24 border-4 border-primary/20">
                 <AvatarImage src={formData.avatar_url} />
-                <AvatarFallback className="text-2xl">
+                <AvatarFallback className="text-2xl bg-primary/10">
                   {formData.display_name?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <label
                 htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+                className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90 transition-all shadow-lg"
               >
                 {uploading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -128,6 +128,7 @@ export const EditProfile = ({ open, onOpenChange, profile, onUpdate }: EditProfi
                 className="hidden"
               />
             </div>
+            <p className="text-xs text-muted-foreground">Click camera icon to change avatar</p>
           </div>
 
           <div className="space-y-2">
@@ -159,10 +160,11 @@ export const EditProfile = ({ open, onOpenChange, profile, onUpdate }: EditProfi
               onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
               placeholder="Tell us about yourself..."
               rows={3}
+              className="resize-none"
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-4 sticky bottom-0 bg-popover">
             <Button
               type="button"
               variant="outline"
