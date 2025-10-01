@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface VideoPlayerProps {
@@ -22,13 +22,9 @@ export const VideoPlayer = ({
   isActive = false
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
   const [showControls, setShowControls] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(false);
-  const userExitedFullscreen = useRef(false);
 
   useEffect(() => {
     if (videoRef.current && isActive) {
@@ -39,56 +35,6 @@ export const VideoPlayer = ({
       setIsPlaying(false);
     }
   }, [isActive]);
-
-  useEffect(() => {
-    const checkOrientation = async () => {
-      const landscape = window.innerWidth > window.innerHeight;
-      const wasLandscape = isLandscape;
-      setIsLandscape(landscape);
-
-      // Reset user exit flag when changing from portrait to landscape
-      if (landscape && !wasLandscape) {
-        userExitedFullscreen.current = false;
-      }
-
-      // Auto fullscreen on landscape only if user hasn't manually exited
-      if (landscape && !document.fullscreenElement && containerRef.current && isActive && !userExitedFullscreen.current) {
-        try {
-          await containerRef.current.requestFullscreen();
-        } catch (error) {
-          console.log('Auto fullscreen prevented:', error);
-        }
-      } else if (!landscape && document.fullscreenElement) {
-        try {
-          await document.exitFullscreen();
-          userExitedFullscreen.current = false;
-        } catch (error) {
-          console.log('Exit fullscreen prevented:', error);
-        }
-      }
-    };
-
-    const handleFullscreenChange = () => {
-      const inFullscreen = !!document.fullscreenElement;
-      setIsFullscreen(inFullscreen);
-      
-      // Track if user manually exited fullscreen while in landscape
-      if (!inFullscreen && isLandscape) {
-        userExitedFullscreen.current = true;
-      }
-    };
-
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, [isActive, isLandscape]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -110,29 +56,8 @@ export const VideoPlayer = ({
     }
   };
 
-  const toggleFullscreen = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if (!containerRef.current) return;
-
-    try {
-      if (!isFullscreen) {
-        userExitedFullscreen.current = false;
-        await containerRef.current.requestFullscreen();
-      } else {
-        userExitedFullscreen.current = true;
-        await document.exitFullscreen();
-      }
-    } catch (error) {
-      console.log('Fullscreen error:', error);
-    }
-  };
-
   return (
-    <div 
-      ref={containerRef}
-      className={`relative ${className} ${isFullscreen ? 'w-screen h-screen' : ''}`}
-    >
+    <div className={`relative ${className}`}>
       <video
         ref={videoRef}
         src={videoUrl}
@@ -140,9 +65,7 @@ export const VideoPlayer = ({
         muted={isMuted}
         loop={loop}
         playsInline
-        className={`w-full h-full ${
-          isFullscreen || isLandscape ? 'object-contain' : 'object-cover'
-        }`}
+        className="w-full h-full object-cover"
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -161,7 +84,7 @@ export const VideoPlayer = ({
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 flex gap-2">
+      <div className="absolute bottom-4 right-4">
         <Button
           variant="ghost"
           size="icon"
@@ -169,15 +92,6 @@ export const VideoPlayer = ({
           onClick={toggleMute}
         >
           {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white"
-          onClick={toggleFullscreen}
-        >
-          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
         </Button>
       </div>
     </div>
