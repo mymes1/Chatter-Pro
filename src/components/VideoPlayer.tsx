@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface VideoPlayerProps {
@@ -22,9 +22,12 @@ export const VideoPlayer = ({
   isActive = false
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
   const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
 
   useEffect(() => {
     if (videoRef.current && isActive) {
@@ -35,6 +38,27 @@ export const VideoPlayer = ({
       setIsPlaying(false);
     }
   }, [isActive]);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      window.removeEventListener('resize', checkOrientation);
+      window.removeEventListener('orientationchange', checkOrientation);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -56,8 +80,27 @@ export const VideoPlayer = ({
     }
   };
 
+  const toggleFullscreen = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!containerRef.current) return;
+
+    try {
+      if (!isFullscreen) {
+        await containerRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.log('Fullscreen error:', error);
+    }
+  };
+
   return (
-    <div className={`relative ${className}`}>
+    <div 
+      ref={containerRef}
+      className={`relative ${className} ${isFullscreen ? 'w-screen h-screen' : ''}`}
+    >
       <video
         ref={videoRef}
         src={videoUrl}
@@ -65,7 +108,9 @@ export const VideoPlayer = ({
         muted={isMuted}
         loop={loop}
         playsInline
-        className="w-full h-full object-cover"
+        className={`w-full h-full ${
+          isFullscreen || isLandscape ? 'object-contain' : 'object-cover'
+        }`}
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -84,7 +129,7 @@ export const VideoPlayer = ({
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4">
+      <div className="absolute bottom-4 right-4 flex gap-2">
         <Button
           variant="ghost"
           size="icon"
@@ -92,6 +137,15 @@ export const VideoPlayer = ({
           onClick={toggleMute}
         >
           {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white"
+          onClick={toggleFullscreen}
+        >
+          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
         </Button>
       </div>
     </div>
