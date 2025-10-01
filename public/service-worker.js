@@ -37,3 +37,29 @@ self.addEventListener('activate', (event) => {
     })
   );
 });
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.openWindow(event.notification.data?.url || '/')
+  );
+});
+
+// Handle push notifications
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  const data = event.data.json();
+  const options = {
+    body: data.body || 'You have a new notification',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: data.data || {},
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Chatter Pro', options)
+  );
+});
