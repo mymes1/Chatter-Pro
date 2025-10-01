@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import ChatRoom from "./pages/ChatRoom";
 import NewChat from "./pages/NewChat";
 import Reels from "./pages/Reels";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <PWAInstallPrompt />
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
