@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useFollow } from '@/hooks/useFollow';
 
 interface Video {
   id: string;
@@ -28,6 +29,38 @@ interface User {
   avatar_url: string | null;
   bio: string | null;
 }
+
+const UserCard = ({ user }: { user: User }) => {
+  const { isFollowing, loading, toggleFollow } = useFollow(user.id);
+
+  return (
+    <div className="p-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Avatar className="w-12 h-12 border-2 border-primary/20">
+          <AvatarImage src={user.avatar_url || ''} />
+          <AvatarFallback className="bg-primary/10 text-primary">
+            {user.display_name?.[0]?.toUpperCase() || 'U'}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="font-semibold">{user.display_name}</p>
+          <p className="text-sm text-muted-foreground">@{user.username}</p>
+          {user.bio && (
+            <p className="text-xs text-muted-foreground line-clamp-1">{user.bio}</p>
+          )}
+        </div>
+      </div>
+      <Button 
+        size="sm" 
+        variant={isFollowing ? 'outline' : 'default'}
+        onClick={toggleFollow}
+        disabled={loading}
+      >
+        {isFollowing ? 'Following' : 'Follow'}
+      </Button>
+    </div>
+  );
+};
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -169,24 +202,7 @@ const Explore = () => {
           <TabsContent value="users" className="mt-0">
             <div className="divide-y divide-border">
               {filteredUsers.map((user) => (
-                <div key={user.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12 border-2 border-primary/20">
-                      <AvatarImage src={user.avatar_url || ''} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {user.display_name?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{user.display_name}</p>
-                      <p className="text-sm text-muted-foreground">@{user.username}</p>
-                      {user.bio && (
-                        <p className="text-xs text-muted-foreground line-clamp-1">{user.bio}</p>
-                      )}
-                    </div>
-                  </div>
-                  <Button size="sm">Follow</Button>
-                </div>
+                <UserCard key={user.id} user={user} />
               ))}
             </div>
           </TabsContent>

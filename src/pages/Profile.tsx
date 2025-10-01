@@ -8,6 +8,7 @@ import { LogOut, Grid, Video as VideoIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { EditProfile } from '@/components/EditProfile';
+import { FollowList } from '@/components/FollowList';
 
 interface Profile {
   id: string;
@@ -27,6 +28,8 @@ const Profile = () => {
   const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [followListOpen, setFollowListOpen] = useState(false);
+  const [followListTab, setFollowListTab] = useState<'followers' | 'following'>('followers');
 
   useEffect(() => {
     fetchProfile();
@@ -122,14 +125,26 @@ const Profile = () => {
                 <p className="font-bold text-lg">{postsCount + videosCount}</p>
                 <p className="text-xs text-muted-foreground">Posts</p>
               </div>
-              <div className="text-center">
+              <button 
+                className="text-center hover:opacity-70 transition-opacity"
+                onClick={() => {
+                  setFollowListTab('followers');
+                  setFollowListOpen(true);
+                }}
+              >
                 <p className="font-bold text-lg">{followersCount}</p>
                 <p className="text-xs text-muted-foreground">Followers</p>
-              </div>
-              <div className="text-center">
+              </button>
+              <button 
+                className="text-center hover:opacity-70 transition-opacity"
+                onClick={() => {
+                  setFollowListTab('following');
+                  setFollowListOpen(true);
+                }}
+              >
                 <p className="font-bold text-lg">{followingCount}</p>
                 <p className="text-xs text-muted-foreground">Following</p>
-              </div>
+              </button>
             </div>
 
             <Button onClick={() => setEditOpen(true)} className="mt-4 w-full max-w-sm">
@@ -140,12 +155,20 @@ const Profile = () => {
       </div>
 
       {profile && (
-        <EditProfile
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          profile={profile}
-          onUpdate={fetchProfile}
-        />
+        <>
+          <EditProfile
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            profile={profile}
+            onUpdate={fetchProfile}
+          />
+          <FollowList
+            open={followListOpen}
+            onOpenChange={setFollowListOpen}
+            userId={profile.id}
+            defaultTab={followListTab}
+          />
+        </>
       )}
 
       <Tabs defaultValue="posts" className="flex-1 overflow-hidden flex flex-col">
