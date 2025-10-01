@@ -5,6 +5,7 @@ import { Heart, MessageCircle as MessageIcon, Share2, MoreHorizontal } from 'luc
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { CreatePost } from '@/components/CreatePost';
 
 interface Post {
   id: string;
@@ -112,15 +113,20 @@ const Feed = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        <div className="p-4 border-b border-border bg-background">
+          <CreatePost onPostCreated={fetchPosts} />
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <p className="text-muted-foreground">Loading feed...</p>
           </div>
         ) : posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-center px-4">
-            <MessageIcon className="w-12 h-12 text-muted-foreground mb-2" />
-            <p className="text-muted-foreground">No posts yet</p>
-            <p className="text-sm text-muted-foreground">Start following people!</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+            <MessageIcon className="w-16 h-16 text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold mb-2">No posts yet</h2>
+            <p className="text-muted-foreground mb-4">Be the first to share something!</p>
+            <p className="text-sm text-muted-foreground">Create a post above or explore to find people to follow</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
