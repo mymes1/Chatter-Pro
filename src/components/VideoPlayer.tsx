@@ -83,10 +83,26 @@ export const VideoPlayer = ({
     window.addEventListener('orientationchange', checkOrientation);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
+    // iOS Safari/Capacitor webkit fullscreen events on video elements
+    const videoEl = videoRef.current as any;
+    const handleWebkitBegin = () => {
+      setIsFullscreen(true);
+    };
+    const handleWebkitEnd = () => {
+      setIsFullscreen(false);
+      if (isLandscape) {
+        userExitedFullscreen.current = true;
+      }
+    };
+    videoEl?.addEventListener?.('webkitbeginfullscreen', handleWebkitBegin);
+    videoEl?.addEventListener?.('webkitendfullscreen', handleWebkitEnd);
+
     return () => {
       window.removeEventListener('resize', checkOrientation);
       window.removeEventListener('orientationchange', checkOrientation);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      videoEl?.removeEventListener?.('webkitbeginfullscreen', handleWebkitBegin);
+      videoEl?.removeEventListener?.('webkitendfullscreen', handleWebkitEnd);
     };
   }, [isActive, isLandscape]);
 
@@ -112,16 +128,39 @@ export const VideoPlayer = ({
 
   const toggleFullscreen = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (!containerRef.current) return;
+
+    const containerEl = containerRef.current;
+    const videoEl = videoRef.current;
+    if (!containerEl && !videoEl) return;
 
     try {
       if (!isFullscreen) {
         userExitedFullscreen.current = false;
-        await containerRef.current.requestFullscreen();
+        // Prefer container fullscreen; fallback to video element and WebKit
+        if (containerEl?.requestFullscreen) {
+          await containerEl.requestFullscreen();
+        } else if (videoEl?.requestFullscreen) {
+          await videoEl.requestFullscreen();
+        } else {
+          // iOS Safari fallback
+          // @ts-ignore - webkitEnterFullscreen is not in the types
+          if (videoEl && typeof (videoEl as any).webkitEnterFullscreen === 'function') {
+            // @ts-ignore
+            (videoEl as any).webkitEnterFullscreen();
+          }
+        }
       } else {
         userExitedFullscreen.current = true;
-        await document.exitFullscreen();
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if (videoEl) {
+          // @ts-ignore - Safari/iOS fallback
+          if (typeof (videoEl as any).webkitExitFullscreen === 'function') {
+            // @ts-ignore
+            (videoEl as any).webkitExitFullscreen();
+          }
+          // Some iOS versions only allow exiting by pressing "Done"; state is updated via webkitendfullscreen
+        }
       }
     } catch (error) {
       console.log('Fullscreen error:', error);
