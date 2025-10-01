@@ -40,8 +40,24 @@ export const VideoPlayer = ({
   }, [isActive]);
 
   useEffect(() => {
-    const checkOrientation = () => {
-      setIsLandscape(window.innerWidth > window.innerHeight);
+    const checkOrientation = async () => {
+      const landscape = window.innerWidth > window.innerHeight;
+      setIsLandscape(landscape);
+
+      // Auto fullscreen on landscape
+      if (landscape && !document.fullscreenElement && containerRef.current && isActive) {
+        try {
+          await containerRef.current.requestFullscreen();
+        } catch (error) {
+          console.log('Auto fullscreen prevented:', error);
+        }
+      } else if (!landscape && document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch (error) {
+          console.log('Exit fullscreen prevented:', error);
+        }
+      }
     };
 
     const handleFullscreenChange = () => {
@@ -58,7 +74,7 @@ export const VideoPlayer = ({
       window.removeEventListener('orientationchange', checkOrientation);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, []);
+  }, [isActive]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
