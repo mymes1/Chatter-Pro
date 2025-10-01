@@ -28,6 +28,7 @@ export const VideoPlayer = ({
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
+  const userExitedFullscreen = useRef(false);
 
   useEffect(() => {
     if (videoRef.current && isActive) {
@@ -42,10 +43,16 @@ export const VideoPlayer = ({
   useEffect(() => {
     const checkOrientation = async () => {
       const landscape = window.innerWidth > window.innerHeight;
+      const wasLandscape = isLandscape;
       setIsLandscape(landscape);
 
-      // Auto fullscreen on landscape
-      if (landscape && !document.fullscreenElement && containerRef.current && isActive) {
+      // Reset user exit flag when changing from portrait to landscape
+      if (landscape && !wasLandscape) {
+        userExitedFullscreen.current = false;
+      }
+
+      // Auto fullscreen on landscape only if user hasn't manually exited
+      if (landscape && !document.fullscreenElement && containerRef.current && isActive && !userExitedFullscreen.current) {
         try {
           await containerRef.current.requestFullscreen();
         } catch (error) {
@@ -54,6 +61,7 @@ export const VideoPlayer = ({
       } else if (!landscape && document.fullscreenElement) {
         try {
           await document.exitFullscreen();
+          userExitedFullscreen.current = false;
         } catch (error) {
           console.log('Exit fullscreen prevented:', error);
         }
@@ -61,7 +69,13 @@ export const VideoPlayer = ({
     };
 
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const inFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(inFullscreen);
+      
+      // Track if user manually exited fullscreen while in landscape
+      if (!inFullscreen && isLandscape) {
+        userExitedFullscreen.current = true;
+      }
     };
 
     checkOrientation();
@@ -74,7 +88,7 @@ export const VideoPlayer = ({
       window.removeEventListener('orientationchange', checkOrientation);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [isActive]);
+  }, [isActive, isLandscape]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,8 +117,10 @@ export const VideoPlayer = ({
 
     try {
       if (!isFullscreen) {
+        userExitedFullscreen.current = false;
         await containerRef.current.requestFullscreen();
       } else {
+        userExitedFullscreen.current = true;
         await document.exitFullscreen();
       }
     } catch (error) {
